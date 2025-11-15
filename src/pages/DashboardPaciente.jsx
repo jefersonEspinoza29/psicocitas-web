@@ -5,6 +5,7 @@ import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import PacienteHome from "./paciente/PacienteHome";
 import PacienteCitas from "./paciente/PacienteCitas";
 import PacientePerfil from "./paciente/PacientePerfil";
+import "../styles/dashboardPaciente.css";
 
 export default function DashboardPaciente() {
   const navigate = useNavigate();
@@ -110,71 +111,29 @@ export default function DashboardPaciente() {
       };
 
   return (
-    <div
-      style={{
-        minWidth: 344,
-        minHeight: 323,
-        height: "100vh",
-        background: "#f5f5f5",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        boxSizing: "border-box",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 960,
-          minWidth: 344,
-          background: "#ffffff",
-          borderRadius: 12,
-          padding: 20,
-          boxShadow: "0 4px 18px rgba(0,0,0,0.06)",
-          boxSizing: "border-box",
-        }}
-      >
+    <div className="dashboard-wrapper">
+      <div className="dashboard-card">
         {/* Header superior */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-            gap: 8,
-          }}
-        >
+        <div className="dashboard-header">
           <div>
-            <h2 style={{ margin: 0, fontSize: 20 }}>Panel del paciente</h2>
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: 13,
-                color: "#6b7280",
-              }}
-            >
+            <h2 className="dashboard-title">Panel del paciente</h2>
+            <p className="dashboard-subtitle">
               Hola, <strong>{user.nombre || "Paciente"}</strong>
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={statusStyle}>
+          <div className="dashboard-header-right">
+            <span
+              className={`dashboard-status-pill ${
+                online ? "online" : "offline"
+              }`}
+            >
               ● {online ? "Online" : "Offline"}
             </span>
 
             <button
               onClick={handleLogout}
-              style={{
-                border: "none",
-                fontSize: 12,
-                padding: "6px 10px",
-                borderRadius: 999,
-                background: "#f3f4f6",
-                color: "#374151",
-                cursor: "pointer",
-              }}
+              className="dashboard-logout-btn"
             >
               Cerrar sesión
             </button>
@@ -182,51 +141,38 @@ export default function DashboardPaciente() {
         </div>
 
         {/* Tabs */}
-        <div
-          style={{
-            display: "flex",
-            background: "#e5e7eb",
-            borderRadius: 999,
-            padding: 2,
-            marginBottom: 16,
-            gap: 4,
-          }}
-        >
+        <div className="dashboard-tabs">
           <button
             type="button"
             onClick={() => setSection("home")}
-            style={section === "home" ? tabActiveStyle : tabBaseStyle}
+            className={`dashboard-tab ${
+              section === "home" ? "dashboard-tab--active" : ""
+            }`}
           >
             Inicio
           </button>
           <button
             type="button"
             onClick={() => setSection("citas")}
-            style={section === "citas" ? tabActiveStyle : tabBaseStyle}
+            className={`dashboard-tab ${
+              section === "citas" ? "dashboard-tab--active" : ""
+            }`}
           >
             Citas
           </button>
           <button
             type="button"
             onClick={() => setSection("perfil")}
-            style={section === "perfil" ? tabActiveStyle : tabBaseStyle}
+            className={`dashboard-tab ${
+              section === "perfil" ? "dashboard-tab--active" : ""
+            }`}
           >
             Perfil
           </button>
         </div>
 
         {/* Contenido */}
-        <div
-          style={{
-            background: "#f9fafb",
-            borderRadius: 10,
-            padding: 16,
-            minHeight: 180,
-            boxSizing: "border-box",
-          }}
-        >
-          {renderSection()}
-        </div>
+        <div className="dashboard-content">{renderSection()}</div>
       </div>
     </div>
   );

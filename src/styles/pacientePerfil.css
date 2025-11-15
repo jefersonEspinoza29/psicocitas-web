@@ -1,0 +1,98 @@
+/* src/styles/pacientePerfil.css */
+
+.perfil-container {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: #374151;
+}
+
+.perfil-title {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+/* Mensajes de estado */
+.perfil-offline {
+  color: #b26a00;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.perfil-msg-success {
+  color: #1e7e34;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.perfil-msg-error {
+  color: #d9534f;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+/* Formulario */
+.perfil-form {
+  margin-top: 4px;
+}
+
+.perfil-field {
+  margin-bottom: 10px;
+}
+
+.perfil-label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #333333;
+}
+
+.perfil-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #dddddd;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #111827;
+}
+
+.perfil-input:focus {
+  border-color: #111827;
+}
+
+/* Campo deshabilitado (correo) */
+.perfil-input-disabled {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+/* Botón */
+.perfil-button {
+  margin-top: 4px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.perfil-button:hover {
+  background: #020617;
+  transform: translateY(-0.5px);
+}
+
+/* Estado deshabilitado */
+.perfil-button-disabled,
+.perfil-button:disabled {
+  background: #c4c4c4;
+  cursor: default;
+  transform: none;
+}

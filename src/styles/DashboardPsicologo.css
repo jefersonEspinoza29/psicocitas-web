@@ -151,7 +151,7 @@ body {
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
 }
 
-/* =========📑 TABS ========= */
+/* =========📑 TABS =========*** */
 .dashboard-tabs {
   display: flex;
   flex-wrap: wrap;

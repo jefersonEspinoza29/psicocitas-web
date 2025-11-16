@@ -91,21 +91,21 @@ export default function DashboardPsicologo() {
 
   const statusStyle = online
     ? {
-        fontSize: 11,
-        padding: "2px 8px",
-        borderRadius: 999,
-        background: "#e5f8e9", // verde suave
-        color: "#166534", // verde fuerte
-        border: "1px solid #bbf7d0",
-      }
+      fontSize: 11,
+      padding: "2px 8px",
+      borderRadius: 999,
+      background: "#e5f8e9", // verde suave
+      color: "#166534", // verde fuerte
+      border: "1px solid #bbf7d0",
+    }
     : {
-        fontSize: 11,
-        padding: "2px 8px",
-        borderRadius: 999,
-        background: "#fee2e2", // rojo suave
-        color: "#b91c1c", // rojo fuerte
-        border: "1px solid #fecaca",
-      };
+      fontSize: 11,
+      padding: "2px 8px",
+      borderRadius: 999,
+      background: "#fee2e2", // rojo suave
+      color: "#b91c1c", // rojo fuerte
+      border: "1px solid #fecaca",
+    };
 
   const handleLogout = async () => {
     try {
@@ -122,7 +122,7 @@ export default function DashboardPsicologo() {
     <div className="dashboard-wrapper">
       <div className="dashboard-card">
         {/* Header superior */}
-        <div className="dashboard-header">
+        <header className="dashboard-header">
           <div>
             <h2 className="dashboard-title">Panel del psicólogo</h2>
             <p className="dashboard-subtitle">
@@ -132,65 +132,68 @@ export default function DashboardPsicologo() {
 
           <div className="dashboard-header-right">
             <span
-              className={`dashboard-status-pill ${
-                online ? "online" : "offline"
-              }`}
+              className={`dashboard-status-pill ${online ? "online" : "offline"
+                }`}
             >
               ● {online ? "Online" : "Offline"}
             </span>
 
             <button
+              type="button"
               onClick={handleLogout}
               className="dashboard-logout-btn"
             >
               Cerrar sesión
             </button>
           </div>
-        </div>
+        </header>
 
         {/* Tabs */}
-        <div className="dashboard-tabs">
+        <nav className="dashboard-tabs">
           <button
             type="button"
             onClick={() => setSection("home")}
-            className={`dashboard-tab ${
-              section === "home" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "home" ? "dashboard-tab--active" : ""
+              }`}
           >
             Inicio
           </button>
+
           <button
             type="button"
             onClick={() => setSection("citas")}
-            className={`dashboard-tab ${
-              section === "citas" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "citas" ? "dashboard-tab--active" : ""
+              }`}
           >
             Citas
           </button>
+
           <button
             type="button"
             onClick={() => setSection("horarios")}
-            className={`dashboard-tab ${
-              section === "horarios" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "horarios" ? "dashboard-tab--active" : ""
+              }`}
           >
             Horarios
           </button>
+
           <button
             type="button"
             onClick={() => setSection("perfil")}
-            className={`dashboard-tab ${
-              section === "perfil" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "perfil" ? "dashboard-tab--active" : ""
+              }`}
           >
             Perfil
           </button>
-        </div>
+        </nav>
 
         {/* Contenido */}
-        <div className="dashboard-content">{renderSection()}</div>
+        <main className="dashboard-content">
+          {renderSection()}
+        </main>
       </div>
     </div>
   );
+
+
 }

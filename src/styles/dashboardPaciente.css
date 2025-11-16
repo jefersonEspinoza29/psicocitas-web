@@ -1,47 +1,83 @@
-/* Wrapper general del panel */
+body {
+  margin: 0;
+  background: #f5f5f5; /* mismo que el dashboard-wrapper */
+}
+
+
+/* =========🎨 VARIABLES BÁSICAS (por si quieres tunear colores luego) ========= */
+:root {
+  --dash-bg: #f3f4f6;
+  --dash-card-bg: #ffffff;
+  --dash-border-subtle: #e5e7eb;
+  --dash-text-main: #111827;
+  --dash-text-muted: #6b7280;
+  --dash-pill-online-bg: rgba(16, 185, 129, 0.08);
+  --dash-pill-online-border: rgba(16, 185, 129, 0.3);
+  --dash-pill-online-text: #047857;
+  --dash-pill-offline-bg: rgba(148, 163, 184, 0.12);
+  --dash-pill-offline-border: rgba(148, 163, 184, 0.5);
+  --dash-pill-offline-text: #6b7280;
+  --dash-tab-bg: #f9fafb;
+  --dash-tab-active-bg: #ffffff;
+  --dash-tab-text: #6b7280;
+  --dash-tab-active-text: #111827;
+}
+
+/* =========🧱 WRAPPER GENERAL ========= */
 .dashboard-wrapper {
-  min-width: 344px;
-  min-height: 323px;
-  height: 100vh;
+  /* 🔴 QUITA esto si lo tienes:
+     height: 100vh;
+  */
+
+  min-height: 100vh;              /* que pueda crecer con el contenido */
+  width: 100%;
   background: #f5f5f5;
   display: flex;
-  align-items: center;
+  align-items: flex-start;        /* arriba, no centrado vertical */
   justify-content: center;
-  padding: 16px;
+  padding: 16px 16px 32px;        /* padding también abajo para que se vea margen al final */
   box-sizing: border-box;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Card principal */
+
+/* =========📦 CARD PRINCIPAL ========= */
 .dashboard-card {
   width: 100%;
   max-width: 960px;
-  min-width: 344px;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  background: var(--dashboard-card-bg, var(--dash-card-bg));
+  border-radius: 18px;
+  padding: 18px 16px 20px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-/* Header superior */
+/* =========👤 HEADER SUPERIOR ========= */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dash-border-subtle);
 }
 
 .dashboard-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
 }
 
 .dashboard-subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #6b7280;
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--dash-text-main);
 }
 
 /* Zona derecha del header (estado + logout) */
@@ -49,90 +85,184 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-/* Pill de estado */
+/* =========🟢 PILL DE ESTADO ========= */
 .dashboard-status-pill {
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: 12px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
 }
 
 .dashboard-status-pill.online {
-  background: #e5f8e9;
-  color: #166534;
-  border-color: #bbf7d0;
+  background: var(--dash-pill-online-bg);
+  color: var(--dash-pill-online-text);
+  border-color: var(--dash-pill-online-border);
 }
 
 .dashboard-status-pill.offline {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fecaca;
+  background: var(--dash-pill-offline-bg);
+  color: var(--dash-pill-offline-text);
+  border-color: var(--dash-pill-offline-border);
 }
 
-/* Botón de cerrar sesión */
-.dashboard-logout-btn {
-  border: none;
-  font-size: 12px;
-  padding: 6px 10px;
+/* Puntito dentro del pill, si lo usas en JSX */
+.dashboard-status-pill::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  background: #f3f4f6;
+  background: currentColor;
+}
+
+/* =========🚪 BOTÓN CERRAR SESIÓN ========= */
+.dashboard-logout-btn {
+  border: 1px solid var(--dash-border-subtle);
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #ffffff;
   color: #374151;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition:
+    background 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.12s ease,
+    border-color 0.16s ease;
 }
 
-/* Tabs */
+.dashboard-logout-btn:hover {
+  background: #f9fafb;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  border-color: #d1d5db;
+}
+
+.dashboard-logout-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+/* =========📑 TABS ========= */
 .dashboard-tabs {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--dash-tab-bg);
+  border-radius: 999px;
+  padding: 4px;
+  overflow-x: auto;
+}
+
+.dashboard-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.dashboard-tabs::-webkit-scrollbar-thumb {
   background: #e5e7eb;
   border-radius: 999px;
-  padding: 2px;
-  margin-bottom: 16px;
-  gap: 4px;
 }
 
 .dashboard-tab {
-  flex: 1;
-  padding: 8px 0;
+  flex: 1 1 auto;
+  min-width: 80px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: none;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  background: #f3f4f6;
-  color: #4b5563;
+  background: transparent;
+  color: var(--dash-tab-text);
+  text-align: center;
+  white-space: nowrap;
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease,
+    transform 0.1s ease;
+}
+
+.dashboard-tab:hover {
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .dashboard-tab.dashboard-tab--active {
-  background: #111827;
-  color: #ffffff;
+  background: var(--dash-tab-active-bg);
+  color: var(--dash-tab-active-text);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
 }
 
-/* Contenedor del contenido interno */
+/* =========📂 CONTENIDO INTERNO ========= */
 .dashboard-content {
+  margin-top: 4px;
   background: #f9fafb;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 16px;
-  min-height: 180px;
   box-sizing: border-box;
 }
 
-/* 📱 Responsive pequeño (por si la ventana es muy estrecha) */
-@media (max-width: 480px) {
+/* Que el contenido pueda crecer y la página haga scroll normal */
+.dashboard-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* =========📱 RESPONSIVE SMALL ========= */
+@media (max-width: 768px) {
   .dashboard-card {
-    padding: 16px;
+    padding: 14px 12px 16px;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   }
 
-  .dashboard-title {
-    font-size: 18px;
+  .dashboard-header {
+    align-items: flex-start;
   }
 
   .dashboard-subtitle {
+    font-size: 14px;
+  }
+
+  .dashboard-logout-btn {
     font-size: 12px;
+    padding: 5px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-wrapper {
+    padding: 10px;
+  }
+
+  .dashboard-card {
+    padding: 12px 10px 14px;
+    border-radius: 12px;
+  }
+
+  .dashboard-title {
+    font-size: 12px;
+  }
+
+  .dashboard-subtitle {
+    font-size: 13px;
   }
 
   .dashboard-tab {
     font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  .dashboard-content {
+    padding: 12px;
   }
 }

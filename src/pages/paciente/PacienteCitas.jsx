@@ -2,7 +2,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import emailjs from "@emailjs/browser";
 import "../../styles/pacienteCitas.css";
+
+// ⚙️ Config de EmailJS desde .env.local (Vite usa import.meta.env y prefijo VITE_)
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_PACIENTE_ID =
+  import.meta.env.VITE_EMAILJS_TEMPLATE_PACIENTE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export default function PacienteCitas({ user }) {
   const online = useOnlineStatus();
@@ -83,6 +90,50 @@ export default function PacienteCitas({ user }) {
     return slots;
   };
 
+  // 🔔 Enviar correo al psicólogo cuando se crea una nueva cita
+  const sendEmailNuevaCitaToPsicologo = (cita, psico) => {
+    // Validar config de EmailJS
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_PACIENTE_ID || !EMAILJS_PUBLIC_KEY) {
+      console.warn(
+        "EmailJS no está configurado (revisar .env.local con VITE_*). No se enviará correo."
+      );
+      return;
+    }
+
+    if (!psico?.email) {
+      console.warn("El psicólogo no tiene email configurado en la BD.");
+      return;
+    }
+
+    const horaBonita = (cita.hora || "").slice(0, 5); // "HH:MM"
+    const fechaBonita = formatFecha(cita.fecha);
+
+    const templateParams = {
+      paciente: user.nombre || user.email,
+      paciente_email: user.email,
+      fecha: fechaBonita,
+      hora: horaBonita,
+      motivo: cita.motivo || "",
+      email: psico.email,
+      psicologo: psico.nombre,
+    };
+
+
+    emailjs
+      .send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_PACIENTE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      )
+      .then(() => {
+        console.log("Correo enviado al psicólogo (nueva cita).");
+      })
+      .catch((err) => {
+        console.error("Error enviando correo al psicólogo:", err);
+      });
+  };
+
   // 1) Cargar citas y lista de psicólogos
   useEffect(() => {
     const loadFromLocal = () => {
@@ -90,7 +141,11 @@ export default function PacienteCitas({ user }) {
       if (localRaw) {
         try {
           const localData = JSON.parse(localRaw);
-          if (localData && localData.id === user.id && Array.isArray(localData.citas)) {
+          if (
+            localData &&
+            localData.id === user.id &&
+            Array.isArray(localData.citas)
+          ) {
             setCitas(localData.citas);
           }
         } catch (e) {
@@ -110,19 +165,15 @@ export default function PacienteCitas({ user }) {
       }
 
       try {
-        // psicólogos disponibles
+        // psicólogos disponibles (👀 asegúrate de tener columna email en la tabla psicologos)
         const { data: psData, error: psError } = await supabase
           .from("psicologos")
-          .select("id, nombre, especialidad");
-
-        console.log("psData:", psData);
-        console.log("psError:", psError);
+          .select("id, nombre, especialidad, email");
 
         if (psError) {
           console.error("Error cargando psicólogos:", psError);
         }
         setPsicologos(psData || []);
-
 
         // citas del paciente
         const { data: citasData, error: citasError } = await supabase
@@ -330,6 +381,18 @@ export default function PacienteCitas({ user }) {
         return;
       }
 
+      // 🔔 Notificar por correo al psicólogo
+      const psico = getPsicologo(selectedPsicoId);
+      if (psico) {
+        sendEmailNuevaCitaToPsicologo(
+          {
+            ...data,
+            motivo: motivo.trim(),
+          },
+          psico
+        );
+      }
+
       const updatedCitas = [...citas, data].sort((a, b) => {
         if (a.fecha === b.fecha) {
           return a.hora.localeCompare(b.hora);
@@ -357,7 +420,15 @@ export default function PacienteCitas({ user }) {
   };
 
   return (
-    <div className="citas-container">
+    <div
+      className="citas-container"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        paddingBottom: 12,
+      }}
+    >
       <h3 className="citas-title">Citas</h3>
 
       {!online && (
@@ -376,7 +447,15 @@ export default function PacienteCitas({ user }) {
       {errorMsg && <p className="perfil-msg-error">{errorMsg}</p>}
 
       {/* FORMULARIO PARA AGENDAR CITA */}
-      <form onSubmit={handleSubmit} className="citas-form">
+      <form
+        onSubmit={handleSubmit}
+        className="citas-form"
+        style={{
+          width: "100%",
+          maxWidth: 600,
+          margin: "0 auto",
+        }}
+      >
         <div className="citas-row">
           <label className="citas-label">Psicólogo</label>
           <select
@@ -454,12 +533,16 @@ export default function PacienteCitas({ user }) {
           disabled={saving || !online}
           className={`perfil-button ${saving || !online ? "perfil-button-disabled" : ""
             }`}
+          style={{ width: "100%" }}
         >
           {saving ? "Creando cita..." : "Agendar cita"}
         </button>
       </form>
 
-      <hr className="citas-divider" />
+      <hr
+        className="citas-divider"
+        style={{ marginTop: 16, marginBottom: 8 }}
+      />
 
       {/* LISTADO DE CITAS */}
       <h4 className="citas-subtitle">Mis citas</h4>
@@ -472,7 +555,14 @@ export default function PacienteCitas({ user }) {
           agendar tu primera cita.
         </p>
       ) : (
-        <div className="citas-list">
+        <div
+          className="citas-list"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
           {citas.map((cita) => {
             const psi = getPsicologo(cita.psicologo_id);
             return (
@@ -508,4 +598,5 @@ export default function PacienteCitas({ user }) {
       )}
     </div>
   );
+
 }

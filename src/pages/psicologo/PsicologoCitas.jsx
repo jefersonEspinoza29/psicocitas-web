@@ -2,7 +2,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import emailjs from "@emailjs/browser";
 import "../../styles/pacienteCitas.css"; // reutilizamos estilos de citas
+
+// ⚙️ Config EmailJS (Vite usa import.meta.env y prefijo VITE_)
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_PSICOLOGO_ID =
+  import.meta.env.VITE_EMAILJS_TEMPLATE_PSICOLOGO_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+// Clave de localStorage para la cola de acciones pendientes
+const PENDING_KEY = "psicologoCitasPendingActions";
 
 const estadoLabel = {
   pendiente: "Pendiente",
@@ -47,6 +57,89 @@ const formatFecha = (isoDate) => {
   }
 };
 
+// Helpers para la cola de acciones pendientes en localStorage
+const loadPendingActions = () => {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const savePendingActions = (actions) => {
+  if (!actions || actions.length === 0) {
+    localStorage.removeItem(PENDING_KEY);
+  } else {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(actions));
+  }
+};
+
+// 🔔 Enviar correo al paciente cuando cambia el estado de la cita
+const sendEmailEstadoCitaToPaciente = (cita, paciente, psicologo) => {
+  if (
+    !EMAILJS_SERVICE_ID ||
+    !EMAILJS_TEMPLATE_PSICOLOGO_ID ||
+    !EMAILJS_PUBLIC_KEY
+  ) {
+    console.warn(
+      "EmailJS no está configurado (revisa .env.local). No se enviará correo."
+    );
+    return;
+  }
+
+  if (!paciente?.email) {
+    console.warn("El paciente no tiene email configurado en la BD.");
+    return;
+  }
+
+  const fechaBonita = formatFecha(cita.fecha);
+  const horaBonita = (cita.hora || "").slice(0, 5);
+
+  const nombrePsico =
+    (psicologo?.nombre && psicologo.nombre.trim()) ||
+    psicologo?.email ||
+    "PsicoCitas";
+
+  const nombrePaciente = [
+    paciente.nombre || "",
+    paciente.apellidos || "",
+  ]
+    .join(" ")
+    .trim();
+
+  const estadoTexto = estadoLabel[cita.estado] || cita.estado;
+
+  const templateParams = {
+    // Estos nombres deben coincidir con tu template en EmailJS
+    paciente: nombrePaciente || paciente.email,
+    email: paciente.email, // To Email
+    psicologo: nombrePsico,
+    fecha: fechaBonita,
+    hora: horaBonita,
+    motivo: cita.motivo || "",
+    estado: estadoTexto, // ej. "Aceptada", "Cancelada", etc.
+    title: "Actualización de tu cita",
+    name: nombrePsico, // From Name
+  };
+
+  emailjs
+    .send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_PSICOLOGO_ID,
+      templateParams,
+      EMAILJS_PUBLIC_KEY
+    )
+    .then(() => {
+      console.log("Correo enviado al paciente (estado de cita).");
+    })
+    .catch((err) => {
+      console.error("Error enviando correo al paciente:", err);
+    });
+};
+
 export default function PsicologoCitas({ user }) {
   const online = useOnlineStatus();
 
@@ -72,6 +165,18 @@ export default function PsicologoCitas({ user }) {
       );
     } catch (e) {
       console.error("Error guardando psicologoCitasLocal:", e);
+    }
+  };
+
+  const enqueuePendingAction = (action) => {
+    try {
+      const current = loadPendingActions();
+      // Dejamos solo la última acción por citaId (si hay varias, nos quedamos con la más reciente)
+      const filtered = current.filter((a) => a.citaId !== action.citaId);
+      filtered.push(action);
+      savePendingActions(filtered);
+    } catch (e) {
+      console.error("Error guardando acción pendiente:", e);
     }
   };
 
@@ -142,7 +247,7 @@ export default function PsicologoCitas({ user }) {
         if (pacienteIds.length > 0) {
           const { data: pacData, error: pacError } = await supabase
             .from("pacientes")
-            .select("id, nombre, apellidos, edad, telefono, sexo")
+            .select("id, nombre, apellidos, edad, telefono, sexo, email")
             .in("id", pacienteIds);
 
           if (pacError) {
@@ -166,18 +271,123 @@ export default function PsicologoCitas({ user }) {
     };
 
     fetchData();
-  }, [online, user.id]); // se recarga cuando cambia el estado online
+  }, [online, user.id]);
 
-  // 2) Cambiar estado de una cita (aceptar / atender / cancelar)
+  // 2) Cuando vuelva el internet → sincronizar acciones pendientes (update / delete)
+  useEffect(() => {
+    const syncPendingActions = async () => {
+      if (!online) return;
+
+      const actions = loadPendingActions();
+      if (!actions.length) return;
+
+      let remaining = [];
+      let currentCitas = [...citas];
+
+      for (const action of actions) {
+        if (action.type === "update") {
+          try {
+            const { data, error } = await supabase
+              .from("citas")
+              .update({ estado: action.nuevoEstado })
+              .eq("id", action.citaId)
+              .eq("psicologo_id", user.id)
+              .select("id, paciente_id, fecha, hora, motivo, estado")
+              .single();
+
+            if (error || !data) {
+              console.error("Error sincronizando acción update:", error);
+              remaining.push(action);
+              continue;
+            }
+
+            currentCitas = sortCitas(
+              currentCitas.map((c) =>
+                c.id === data.id ? { ...c, estado: data.estado } : c
+              )
+            );
+
+            const paciente = getPaciente(data.paciente_id);
+            if (
+              paciente &&
+              ["aceptada", "atendida", "cancelada"].includes(data.estado)
+            ) {
+              sendEmailEstadoCitaToPaciente(data, paciente, user);
+            }
+          } catch (e) {
+            console.error("Error sincronizando acción update:", e);
+            remaining.push(action);
+          }
+        } else if (action.type === "delete") {
+          try {
+            const { error } = await supabase
+              .from("citas")
+              .delete()
+              .eq("id", action.citaId)
+              .eq("psicologo_id", user.id);
+
+            if (error) {
+              console.error("Error sincronizando acción delete:", error);
+              remaining.push(action);
+              continue;
+            }
+
+            currentCitas = currentCitas.filter(
+              (c) => c.id !== action.citaId
+            );
+          } catch (e) {
+            console.error("Error sincronizando acción delete:", e);
+            remaining.push(action);
+          }
+        }
+      }
+
+      setCitas(currentCitas);
+      persistLocal(currentCitas);
+      savePendingActions(remaining);
+
+      if (actions.length && !remaining.length) {
+        setMsg(
+          "Cambios pendientes de tus citas se sincronizaron correctamente."
+        );
+      }
+    };
+
+    syncPendingActions();
+  }, [online, user.id, citas, pacientesMap]);
+
+  // 3) Cambiar estado de una cita (aceptar / atender / cancelar)
   const handleCambiarEstado = async (cita, nuevoEstado) => {
     setMsg("");
     setErrorMsg("");
 
+    // Siempre actualizamos localmente para que el psicólogo vea el cambio
+    const newCitasLocal = sortCitas(
+      citas.map((c) =>
+        c.id === cita.id ? { ...c, estado: nuevoEstado } : c
+      )
+    );
+    setCitas(newCitasLocal);
+    persistLocal(newCitasLocal);
+
+    // Si NO hay internet → guardamos acción pendiente y salimos
     if (!online) {
-      setErrorMsg("No puedes cambiar el estado de la cita estando offline.");
+      enqueuePendingAction({
+        type: "update",
+        citaId: cita.id,
+        nuevoEstado,
+        timestamp: Date.now(),
+      });
+
+      setMsg(
+        `Cita marcada como "${
+          estadoLabel[nuevoEstado] || nuevoEstado
+        }". Se sincronizará cuando vuelvas a tener internet.`
+      );
       return;
     }
 
+    // Si hay internet → actualizamos en Supabase de inmediato
     setSavingId(cita.id);
     try {
       const { data, error } = await supabase
@@ -190,21 +400,36 @@ export default function PsicologoCitas({ user }) {
 
       if (error) {
         console.error("Error cambiando estado de la cita:", error);
-        setErrorMsg("No se pudo actualizar la cita. Intenta nuevamente.");
+        setErrorMsg("No se pudo actualizar la cita en el servidor.");
         return;
       }
 
       const newCitas = sortCitas(
-        citas.map((c) =>
+        newCitasLocal.map((c) =>
           c.id === cita.id ? { ...c, estado: data.estado } : c
         )
       );
 
       setCitas(newCitas);
       persistLocal(newCitas);
+
       setMsg(
-        `Cita actualizada a "${estadoLabel[data.estado] || data.estado}".`
+        `Cita actualizada a "${
+          estadoLabel[data.estado] || data.estado
+        }".`
       );
+
+      // Correo solo si la cita quedó en un estado que importa al paciente
+      if (["aceptada", "atendida", "cancelada"].includes(data.estado)) {
+        const paciente = getPaciente(data.paciente_id);
+        if (paciente) {
+          sendEmailEstadoCitaToPaciente(
+            { ...cita, ...data },
+            paciente,
+            user
+          );
+        }
+      }
     } catch (err) {
       console.error("Error en handleCambiarEstado:", err);
       setErrorMsg("Ocurrió un problema al actualizar la cita.");
@@ -213,21 +438,35 @@ export default function PsicologoCitas({ user }) {
     }
   };
 
-  // 3) Eliminar una cita
+  // 4) Eliminar una cita (offline-first)
   const handleEliminar = async (citaId) => {
     setMsg("");
     setErrorMsg("");
-
-    if (!online) {
-      setErrorMsg("No puedes eliminar citas estando offline.");
-      return;
-    }
 
     const confirmar = window.confirm(
       "¿Seguro que quieres eliminar esta cita? Esta acción no se puede deshacer."
     );
     if (!confirmar) return;
 
+    // Siempre la quitamos de la UI y del caché local
+    const newCitasLocal = citas.filter((c) => c.id !== citaId);
+    setCitas(newCitasLocal);
+    persistLocal(newCitasLocal);
+
+    // Si NO hay internet → guardamos acción pendiente y salimos
+    if (!online) {
+      enqueuePendingAction({
+        type: "delete",
+        citaId,
+        timestamp: Date.now(),
+      });
+      setMsg(
+        "Cita eliminada en este dispositivo. Se eliminará del servidor cuando vuelvas a tener internet."
+      );
+      return;
+    }
+
+    // Si hay internet → borramos también en Supabase
     setSavingId(citaId);
     try {
       const { error } = await supabase
@@ -238,13 +477,14 @@ export default function PsicologoCitas({ user }) {
 
       if (error) {
         console.error("Error eliminando cita:", error);
-        setErrorMsg("No se pudo eliminar la cita. Intenta nuevamente.");
+        setErrorMsg("No se pudo eliminar la cita en el servidor.");
         return;
       }
 
       const newCitas = citas.filter((c) => c.id !== citaId);
       setCitas(newCitas);
       persistLocal(newCitas);
+
       setMsg("Cita eliminada correctamente.");
     } catch (err) {
       console.error("Error en handleEliminar:", err);
@@ -260,8 +500,9 @@ export default function PsicologoCitas({ user }) {
 
       {!online && (
         <p className="citas-offline">
-          Estás en modo offline. Solo podrás ver las citas guardadas en este
-          dispositivo, no modificar su estado.
+          Estás en modo offline. Los cambios que hagas en el estado de las
+          citas se guardarán en este dispositivo y se enviarán al servidor
+          cuando vuelvas a tener internet.
         </p>
       )}
 
@@ -308,7 +549,7 @@ export default function PsicologoCitas({ user }) {
                   .join(" • ")
               : null;
 
-            const deshabilitado = savingId === cita.id || !online;
+            const deshabilitado = savingId === cita.id; // 👈 ya NO bloqueamos por offline
 
             return (
               <div key={cita.id} className="cita-card">
@@ -316,7 +557,9 @@ export default function PsicologoCitas({ user }) {
                   <div>
                     <div className="cita-psych-name">{nombreCompleto}</div>
                     {infoLinea && (
-                      <div className="cita-psych-speciality">{infoLinea}</div>
+                      <div className="cita-psych-speciality">
+                        {infoLinea}
+                      </div>
                     )}
                   </div>
                   <span className={estadoClass(cita.estado)}>

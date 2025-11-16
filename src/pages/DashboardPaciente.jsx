@@ -94,86 +94,332 @@ export default function DashboardPaciente() {
   // 💊 Estilos del pill Online / Offline
   const statusStyle = online
     ? {
-        fontSize: 11,
-        padding: "2px 8px",
-        borderRadius: 999,
-        background: "#e5f8e9", // verde suave
-        color: "#166534",      // verde fuerte
-        border: "1px solid #bbf7d0",
-      }
+      fontSize: 11,
+      padding: "2px 8px",
+      borderRadius: 999,
+      background: "#e5f8e9", // verde suave
+      color: "#166534",      // verde fuerte
+      border: "1px solid #bbf7d0",
+    }
     : {
-        fontSize: 11,
-        padding: "2px 8px",
-        borderRadius: 999,
-        background: "#fee2e2", // rojo suave
-        color: "#b91c1c",      // rojo fuerte
-        border: "1px solid #fecaca",
-      };
+      fontSize: 11,
+      padding: "2px 8px",
+      borderRadius: 999,
+      background: "#fee2e2", // rojo suave
+      color: "#b91c1c",      // rojo fuerte
+      border: "1px solid #fecaca",
+    };
 
   return (
-    <div className="dashboard-wrapper">
-      <div className="dashboard-card">
+    <div
+      className="dashboard-wrapper"
+      style={{
+        minHeight: "100vh",
+        padding: "16px",
+        boxSizing: "border-box",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        background:
+          "radial-gradient(circle at top, #e5e7eb, var(--dashboard-bg, #f3f4f6))",
+      }}
+    >
+      <div
+        className="dashboard-card"
+        style={{
+          width: "100%",
+          maxWidth: "960px",
+          background: "var(--dashboard-card-bg, #ffffff)",
+          borderRadius: "18px",
+          boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
+          padding: "18px 16px 22px",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
         {/* Header superior */}
-        <div className="dashboard-header">
-          <div>
-            <h2 className="dashboard-title">Panel del paciente</h2>
-            <p className="dashboard-subtitle">
-              Hola, <strong>{user.nombre || "Paciente"}</strong>
-            </p>
+        <header
+          className="dashboard-header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
+            borderBottom: "1px solid #e5e7eb",
+            paddingBottom: 10,
+          }}
+        >
+          {/* Info usuario */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            {/* Avatar inicial */}
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "999px",
+                background:
+                  "linear-gradient(135deg, #4f46e5, #06b6d4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+            >
+              {(user.nombre || user.email || "P")
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 12,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#9ca3af",
+                }}
+              >
+                Panel del paciente
+              </p>
+              <p
+                className="dashboard-subtitle"
+                style={{
+                  margin: "2px 0 0 0",
+                  fontSize: 15,
+                  color: "#111827",
+                }}
+              >
+                Hola{" "}
+                <strong>
+                  {user.nombre?.trim() || "Paciente"}
+                </strong>
+              </p>
+            </div>
           </div>
 
-          <div className="dashboard-header-right">
+          {/* Estado + logout */}
+          <div
+            className="dashboard-header-right"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+            }}
+          >
             <span
-              className={`dashboard-status-pill ${
-                online ? "online" : "offline"
-              }`}
+              className={`dashboard-status-pill ${online ? "online" : "offline"
+                }`}
+              style={{
+                fontSize: 12,
+                padding: "4px 10px",
+                borderRadius: "999px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                border: online
+                  ? "1px solid rgba(16,185,129,0.3)"
+                  : "1px solid rgba(148,163,184,0.5)",
+                backgroundColor: online
+                  ? "rgba(16,185,129,0.08)"
+                  : "rgba(148,163,184,0.12)",
+                color: online ? "#047857" : "#6b7280",
+              }}
             >
-              ● {online ? "Online" : "Offline"}
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 8,
+                  height: 8,
+                  borderRadius: "999px",
+                  backgroundColor: online ? "#10b981" : "#9ca3af",
+                }}
+              />
+              {online ? "Conectado" : "Sin conexión"}
             </span>
 
             <button
               onClick={handleLogout}
               className="dashboard-logout-btn"
+              style={{
+                whiteSpace: "nowrap",
+                border: "1px solid #e5e7eb",
+                background: "#ffffff",
+                borderRadius: "999px",
+                padding: "6px 14px",
+                fontSize: 13,
+                cursor: "pointer",
+                color: "#374151",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                transition:
+                  "background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease",
+              }}
+              onMouseDown={(e) =>
+                (e.currentTarget.style.transform = "scale(0.97)")
+              }
+              onMouseUp={(e) =>
+                (e.currentTarget.style.transform = "scale(1)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "scale(1)")
+              }
             >
-              Cerrar sesión
+              <span>Salir</span>
             </button>
           </div>
-        </div>
+        </header>
 
         {/* Tabs */}
-        <div className="dashboard-tabs">
+        <nav
+          className="dashboard-tabs"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 6,
+            background: "#f9fafb",
+            borderRadius: "999px",
+            padding: 4,
+            overflowX: "auto",
+          }}
+        >
           <button
             type="button"
             onClick={() => setSection("home")}
-            className={`dashboard-tab ${
-              section === "home" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "home"
+                ? "dashboard-tab--active"
+                : ""
+              }`}
+            style={{
+              flex: "1 1 auto",
+              minWidth: 80,
+              border: "none",
+              borderRadius: "999px",
+              padding: "6px 12px",
+              fontSize: 13,
+              background:
+                section === "home"
+                  ? "#ffffff"
+                  : "transparent",
+              boxShadow:
+                section === "home"
+                  ? "0 6px 14px rgba(15,23,42,0.08)"
+                  : "none",
+              color:
+                section === "home"
+                  ? "#111827"
+                  : "#6b7280",
+              cursor: "pointer",
+              transition:
+                "background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+            }}
           >
             Inicio
           </button>
+
           <button
             type="button"
             onClick={() => setSection("citas")}
-            className={`dashboard-tab ${
-              section === "citas" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "citas"
+                ? "dashboard-tab--active"
+                : ""
+              }`}
+            style={{
+              flex: "1 1 auto",
+              minWidth: 80,
+              border: "none",
+              borderRadius: "999px",
+              padding: "6px 12px",
+              fontSize: 13,
+              background:
+                section === "citas"
+                  ? "#ffffff"
+                  : "transparent",
+              boxShadow:
+                section === "citas"
+                  ? "0 6px 14px rgba(15,23,42,0.08)"
+                  : "none",
+              color:
+                section === "citas"
+                  ? "#111827"
+                  : "#6b7280",
+              cursor: "pointer",
+              transition:
+                "background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+            }}
           >
             Citas
           </button>
+
           <button
             type="button"
             onClick={() => setSection("perfil")}
-            className={`dashboard-tab ${
-              section === "perfil" ? "dashboard-tab--active" : ""
-            }`}
+            className={`dashboard-tab ${section === "perfil"
+                ? "dashboard-tab--active"
+                : ""
+              }`}
+            style={{
+              flex: "1 1 auto",
+              minWidth: 80,
+              border: "none",
+              borderRadius: "999px",
+              padding: "6px 12px",
+              fontSize: 13,
+              background:
+                section === "perfil"
+                  ? "#ffffff"
+                  : "transparent",
+              boxShadow:
+                section === "perfil"
+                  ? "0 6px 14px rgba(15,23,42,0.08)"
+                  : "none",
+              color:
+                section === "perfil"
+                  ? "#111827"
+                  : "#6b7280",
+              cursor: "pointer",
+              transition:
+                "background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+            }}
           >
             Perfil
           </button>
-        </div>
+        </nav>
 
         {/* Contenido */}
-        <div className="dashboard-content">{renderSection()}</div>
+        <main
+          className="dashboard-content"
+          style={{
+            marginTop: 4,
+          }}
+        >
+          {renderSection()}
+        </main>
       </div>
     </div>
   );
+
+
+
 }

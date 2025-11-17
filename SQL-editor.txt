@@ -1,0 +1,169 @@
+-- Tabla de pacientes
+create table if not exists pacientes (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text unique not null,
+  nombre text not null,
+  telefono text,
+  created_at timestamptz default now()
+);
+
+alter table pacientes
+  add column if not exists dni text,
+  add column if not exists apellidos text,
+  add column if not exists edad smallint,
+  add column if not exists sexo text check (sexo in ('masculino', 'femenino', 'otro'));
+
+-----------------------------------------------------------------------------------------------------
+
+-- Tabla de psicólogos
+create table if not exists psicologos (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text unique not null,
+  nombre text not null,
+  especialidad text,
+  colegiatura text,
+  experiencia text,
+  created_at timestamptz default now()
+);
+
+alter table public.psicologos
+add column if not exists telefono text;
+
+
+-----------------------------------------------------------------------------------------
+-- Tabla de horarios_psicologo
+
+create table if not exists horarios_psicologo (
+  id uuid primary key default gen_random_uuid(),
+  psicologo_id uuid not null references psicologos(id) on delete cascade,
+  -- 0 = domingo 1 = lunes ... 6 = sabado
+  dia_semana smallint not null check (dia_semana between 0 and 6),
+  hora_inicio time not null,
+  hora_fin time not null,
+  activo boolean not null default true,
+  created_at timestamptz default now(),
+  constraint ck_hora_valida check (hora_fin > hora_inicio),
+  unique (psicologo_id, dia_semana)
+);
+
+
+----------------------------------------------------------------------------------------------
+
+--tabla de citas
+create table if not exists citas (
+  id uuid primary key default gen_random_uuid(),
+
+  -- quien pide la cita
+  paciente_id uuid references pacientes(id) on delete cascade,
+
+  -- con que psicólogo
+  psicologo_id uuid references psicologos(id) on delete cascade,
+
+  fecha date not null,
+  hora time not null, -- formato 'HH:MM:SS'
+  motivo text,
+
+  estado text check (
+    estado in ('pendiente', 'aceptada', 'rechazada', 'cancelada', 'atendida')
+  ) default 'pendiente',
+
+  created_at timestamptz default now()
+);
+
+-- Un psciologo no puede tener 2 citas en el mismo día y hora
+create unique index if not exists citas_psicologo_unica
+  on citas (psicologo_id, fecha, hora);
+
+
+
+
+-- Activar RLS
+alter table pacientes enable row level security;
+alter table psicologos enable row level security;
+alter table horarios_psicologo enable row level security;
+alter table citas enable row level security;
+
+----------------------------------------------------------------------------------------------
+
+-- politicas basicas: cada usuario ve/inserta/actualiza solo su fila
+create policy "paciente_select_own" on pacientes
+  for select using (auth.uid() = id);
+
+create policy "paciente_insert_own" on pacientes
+  for insert with check (auth.uid() = id);
+
+
+create policy "paciente_update_own" on public.pacientes
+  for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+create policy "Cualquiera puede ver pacientes"
+  on pacientes
+  for select
+  using ( true );
+
+-----------------------------------------------------------------------------------------------
+--politicas basicas: cada psicologos ve/inserta/actualiza solo su fila
+
+
+create policy "psicologo_select_own" on psicologos
+  for select using (auth.uid() = id);
+
+create policy "psicologo_insert_own" on psicologos
+  for insert with check (auth.uid() = id);
+
+create policy "psicologo_update_own" on public.psicologos
+  for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+create policy "Cualquiera puede ver psicologos"
+  on psicologos
+  for select
+  using ( true );
+  
+create policy "Psicologo borra sus citas"
+  on citas
+  for delete
+  using ( auth.uid() = psicologo_id );
+
+
+-----------------------------------------------------------------------------------------------
+--politicas basicas: cada para horarios ve/inserta/actualiza
+
+create policy "psico_horarios_select_own" on horarios_psicologo
+  for select using (auth.uid() = psicologo_id);
+
+create policy "psico_horarios_insert_own" on horarios_psicologo
+  for insert with check (auth.uid() = psicologo_id);
+
+create policy "psico_horarios_update_own" on horarios_psicologo
+  for update using (auth.uid() = psicologo_id);
+
+-------------------------------------------------------------------------------------------------
+--politicas basicas: cada para citas ve/inserta/actualiza
+
+create policy "Paciente ve sus citas"
+  on citas for select
+  using ( auth.uid() = paciente_id );
+
+create policy "Paciente crea sus citas"
+  on citas for insert
+  with check ( auth.uid() = paciente_id );
+
+--Psicologo ve/actualiza sus citas:
+
+create policy "Psicologo ve sus citas"
+  on citas for select
+  using ( auth.uid() = psicologo_id );
+
+create policy "Psicologo actualiza sus citas"
+  on citas for update
+  using ( auth.uid() = psicologo_id );
+
+--Para que el paciente pueda leer horarios:
+
+create policy "Cualquiera puede ver horarios"
+  on horarios_psicologo for select
+  using ( true );

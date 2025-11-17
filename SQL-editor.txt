@@ -167,3 +167,27 @@ create policy "Psicologo actualiza sus citas"
 create policy "Cualquiera puede ver horarios"
   on horarios_psicologo for select
   using ( true );
+
+
+
+
+Hola {{paciente}},
+
+Te escribimos para informarte que el estado de tu cita en PsicoCitas ha cambiado.
+
+📘 Psicólogo(a): {{psicologo}}
+📅 Fecha de la cita: {{fecha}}
+⏰ Hora: {{hora}}
+📝 Motivo registrado: {{motivo}}
+
+🔔 Nuevo estado: {{estado}}
+
+¿Qué significa esto?
+
+- Si la cita está “Aceptada”: tu psicólogo ha confirmado la cita. Te recomendamos conectarte o llegar unos minutos antes de la hora programada.
+- Si la cita está “Atendida”: la sesión ya fue realizada y registrada en el sistema.
+- Si la cita está “Cancelada”: la cita se ha cancelado. Si lo consideras necesario, puedes ingresar a PsicoCitas para solicitar una nueva.
+
+Si no reconoces esta actualización o tienes alguna duda, por favor responde a este correo o comunícate con tu psicólogo(a).
+
+Gracias por confiar en PsicoCitas 🧠💙
